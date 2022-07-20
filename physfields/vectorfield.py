@@ -3,7 +3,7 @@ import numbers
 import matplotlib
 from scipy.interpolate import griddata
 
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, colors as clr
 
 from .scalarfield import ScalarField
 
@@ -41,14 +41,16 @@ class VectorField():
             raise NotImplementedError
 
     def plot(self, x, y, *, file=None, limits=None, mask=None):
+        plt.style.use('dark_background')
         fig, ax = plt.subplots(figsize=(10, 10))
+        fig.tight_layout()
 
         u, v = self(x, y)
         if mask is not None:
             u = np.ma.masked_where(mask(x, y), u)
             v = np.ma.masked_where(mask(x, y), v)
 
-        ax.quiver(x, y, u, v)
+        ax.quiver(x, y, u, v, np.arctan2(v, u), norm=clr.Normalize(vmin=-np.pi, vmax=np.pi), cmap='hsv', pivot='middle')
         ax.set_aspect('equal')
 
         if limits is not None:
@@ -58,6 +60,7 @@ class VectorField():
 
         if file is None:
             matplotlib.use('TkAgg')
+            plt.show()
         else:
             matplotlib.use('Agg')
             fig.savefig(file, dpi=100)
