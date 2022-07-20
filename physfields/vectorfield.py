@@ -1,10 +1,11 @@
 import numpy as np
 import numbers
+import matplotlib
 from scipy.interpolate import griddata
 
 from matplotlib import pyplot as plt
 
-from scalarfield import ScalarField
+from .scalarfield import ScalarField
 
 
 class VectorField():
@@ -39,10 +40,27 @@ class VectorField():
         else:
             raise NotImplementedError
 
-    def plot(self, x, y):
-        plt.quiver(x, y, *self(x, y))
-        plt.gca().set_aspect('equal')
-        plt.get_current_fig_manager().window.attributes('-fullscreen', True)
+    def plot(self, x, y, *, file=None, limits=None, mask=None):
+        fig, ax = plt.subplots(figsize=(10, 10))
+
+        u, v = self(x, y)
+        if mask is not None:
+            u = np.ma.masked_where(mask(x, y), u)
+            v = np.ma.masked_where(mask(x, y), v)
+
+        ax.quiver(x, y, u, v)
+        ax.set_aspect('equal')
+
+        if limits is not None:
+            ((xmin, xmax), (ymin, ymax)) = limits
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
+
+        if file is None:
+            matplotlib.use('TkAgg')
+        else:
+            matplotlib.use('Agg')
+            fig.savefig(file, dpi=100)
 
 
 class SampledVectorField():
