@@ -1,3 +1,4 @@
-fields-egg.info
+*fields.egg-info/*
 *.pyc
+build/*
 
