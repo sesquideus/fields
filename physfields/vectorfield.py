@@ -1,9 +1,9 @@
 import numpy as np
 import numbers
-import matplotlib
+import matplotlib as mpl
 from scipy.interpolate import griddata
 
-from matplotlib import pyplot as plt, colors as clr
+from matplotlib import pyplot as plt
 
 from .scalarfield import ScalarField
 
@@ -40,8 +40,7 @@ class VectorField():
         else:
             raise NotImplementedError
 
-    def plot(self, x, y, *, file=None, limits=None, mask=None):
-        plt.style.use('dark_background')
+    def plot(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
         fig, ax = plt.subplots(figsize=(10, 10))
         fig.tight_layout()
 
@@ -50,7 +49,22 @@ class VectorField():
             u = np.ma.masked_where(mask(x, y), u)
             v = np.ma.masked_where(mask(x, y), v)
 
-        ax.quiver(x, y, u, v, np.arctan2(v, u), norm=clr.Normalize(vmin=-np.pi, vmax=np.pi), cmap='hsv', pivot='middle')
+        norm = None
+        cmap = None
+        if colour is None:                                  # No colour
+            clr = np.zeros_like(u)
+        elif isinstance(colour, ScalarField):               # Colour by scalar field, evaluate automatically
+            clr = colour(x, y)
+            norm = mpl.colors.TwoSlopeNorm(0)
+            cmap = kwargs.get('cmap', 'bwr')                # Default cmap: bwr
+        elif colour == 'azimuth':                           # Colour by azimuth automatically
+            clr = np.arctan2(v, u)
+            norm = mpl.colors.Normalize(-np.pi, np.pi)
+            cmap = kwargs.get('cmap', 'hsv')                # Default cmap: hsv
+        else:                                               # Default: pass-through
+            clr = colour
+
+        ax.quiver(x, y, u, v, clr, norm=norm, cmap=cmap, pivot='middle')
         ax.set_aspect('equal')
 
         if limits is not None:
@@ -59,10 +73,10 @@ class VectorField():
             ax.set_ylim(ymin, ymax)
 
         if file is None:
-            matplotlib.use('TkAgg')
+            mpl.use('TkAgg')
             plt.show()
         else:
-            matplotlib.use('Agg')
+            mpl.use('Agg')
             fig.savefig(file, dpi=100)
 
 
