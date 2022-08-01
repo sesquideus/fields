@@ -1,6 +1,7 @@
 import numpy as np
 import numbers
 
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib import colors
 
@@ -39,10 +40,57 @@ class ScalarField():
         else:
             return ScalarField(lambda x, y: self.function(x, y) / other.function(x, y))
 
-    def plot(self, x, y):
-        plt.imshow(self(x, y), extent=[x[0][0], x[0][-1], x[-1][0], x[-1][-1]])
-        plt.gca().set_aspect('equal')
-        plt.get_current_fig_manager().window.attributes('-fullscreen', True)
+    def plot_image(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
+        fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 10)))
+        fig.tight_layout()
+
+        if mask is not None:
+            u = np.ma.masked_where(mask(x, y), x)
+            v = np.ma.masked_where(mask(x, y), y)
+            x, y = u, v
+
+        if limits is not None:
+            ((xmin, xmax), (ymin, ymax)) = limits
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
+
+        if file is None:
+            plt.show()
+        else:
+            fig.switch_backend('Agg')
+            fig.savefig(file, dpi=100)
+
+    def plot_3D(self, x, y, *, colour=None, file=None, limits=None, **kwargs):
+        fig = plt.figure(figsize=kwargs.get('figsize', (10, 10)))
+        ax = plt.axes(projection='3d')
+        fig.tight_layout()
+
+        norm = None
+        cmap = None
+        if colour is None:                                  # No colour
+            clr = np.zeros_like(u)
+        elif isinstance(colour, ScalarField):               # Colour by scalar field, evaluate automatically
+            clr = colour(x, y)
+            norm = kwargs.get('norm', mpl.colors.TwoSlopeNorm(0))
+            cmap = kwargs.get('cmap', 'bwr')                # Default cmap: bwr
+        else:                                               # Default: pass-through
+            clr = colour
+
+        if limits is not None:
+            ((xmin, xmax), (ymin, ymax)) = limits
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
+
+        ax.set_box_aspect([1, 1, 1])
+        cmap = mpl.cm.get_cmap(cmap)
+        ax.plot_surface(x, y, self(x, y), facecolors=cmap(norm(clr)), norm=norm, cmap=cmap, rstride=1, cstride=1)
+
+        if file is None:
+            mpl.use('TkAgg')
+            plt.show()
+        else:
+            mpl.use('Agg')
+            fig.savefig(file, dpi=100)
 
 
 class SampledScalarField():

@@ -41,7 +41,7 @@ class VectorField():
             raise NotImplementedError
 
     def plot(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
-        fig, ax = plt.subplots(figsize=(10, 10))
+        fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 10)))
         fig.tight_layout()
 
         u, v = self(x, y)
@@ -73,10 +73,10 @@ class VectorField():
             ax.set_ylim(ymin, ymax)
 
         if file is None:
-            mpl.use('TkAgg')
+            plt.switch_backend('TkAgg')
             plt.show()
         else:
-            mpl.use('Agg')
+            plt.switch_backend('Agg')
             fig.savefig(file, dpi=100)
 
 
@@ -126,10 +126,10 @@ class SampledVectorField():
             else:
                 raise ValueError(f"Domains do not agree ({self.x}×{self.y} vs {other.x}×{other.y}")
         elif isinstance(other, SampledVectorField):
-            #if self.x == other.x and self.y == other.y:
-            return ScalarField(self.x, self.y, self.u * other.u + self.v * other.v)
-         #   else:
-          #      raise ValueError(f"Domains do not agree ({self.x}×{self.y} vs {other.x}×{other.y}")
+            if self.x == other.x and self.y == other.y:
+                return ScalarField(self.x, self.y, self.u * other.u + self.v * other.v)
+            else:
+                raise ValueError(f"Domains do not agree ({self.x}×{self.y} vs {other.x}×{other.y}")
 
     def __rmul__(self, other):
         return self * other
