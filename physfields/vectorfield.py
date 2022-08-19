@@ -44,6 +44,8 @@ class VectorField():
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 10)))
         fig.tight_layout()
 
+        ax.set_facecolor(kwargs.get('face_colour', 'white'))
+
         u, v = self(x, y)
         if mask is not None:
             u = np.ma.masked_where(mask(x, y), u)
