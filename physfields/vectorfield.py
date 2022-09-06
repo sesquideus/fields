@@ -5,7 +5,7 @@ from scipy.interpolate import griddata
 
 from matplotlib import pyplot as plt
 
-from .scalarfield import ScalarField
+from .scalarfield import ScalarField, SampledScalarField
 
 
 class VectorField():
@@ -128,8 +128,8 @@ class SampledVectorField():
             else:
                 raise ValueError(f"Domains do not agree ({self.x}×{self.y} vs {other.x}×{other.y}")
         elif isinstance(other, SampledVectorField):
-            if self.x == other.x and self.y == other.y:
-                return ScalarField(self.x, self.y, self.u * other.u + self.v * other.v)
+            if np.array_equal(self.x, other.x) and np.array_equal(self.y, other.y):
+                return SampledScalarField(self.x, self.y, self.u * other.u + self.v * other.v)
             else:
                 raise ValueError(f"Domains do not agree ({self.x}×{self.y} vs {other.x}×{other.y}")
 

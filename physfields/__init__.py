@@ -1,2 +1,2 @@
-from .scalarfield import ScalarField
-from .vectorfield import VectorField
+from .scalarfield import ScalarField, SampledScalarField
+from .vectorfield import VectorField, SampledVectorField
