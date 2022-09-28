@@ -17,6 +17,17 @@ class VectorField():
         """ Construct from functions u(x, y) and v(x, y) """
         return __class__(lambda x, y: (u(x, y), v(x, y)))
 
+    @staticmethod
+    def from_rt(rho, tau):
+        """ Construct from functions rho(r, phi), tau(r, phi) """
+        def fun(x, y):
+            r = np.sqrt(x**2 + y**2)
+            phi = (2 * np.pi + np.arctan2(y, x)) % (2 * np.pi)
+            erho = rho(r, phi)
+            etau = tau(r, phi)
+            return erho * np.cos(etau), erho * np.sin(etau)
+        return __class__(fun)
+
     def __call__(self, x, y):
         return self.function(x, y)
 
@@ -32,7 +43,8 @@ class VectorField():
         elif isinstance(other, ScalarField):
             return VectorField(lambda x, y: (self.function(x, y)[0] * other.function(x, y), self.function(x, y)[1] * other.function(x, y)))
         elif isinstance(other, VectorField):
-            return ScalarField(lambda x, y: self.function(x, y)[0] * other.function(x, y)[0] + self.function(x, y)[1] * other.function(x, y)[1])
+            return ScalarField(lambda x, y: self.function(x, y)[0] * other.function(x, y)[1] - self.function(x, y)[1] * other.function(x, y)[0])
+        raise ValueError("Can only multiply vector field with scalars, scalar fields and vector fields")
 
     def __rmul__(self, other):
         if isinstance(other, numbers.Number):
@@ -63,6 +75,14 @@ class VectorField():
             clr = np.arctan2(v, u)
             norm = mpl.colors.Normalize(-np.pi, np.pi)
             cmap = kwargs.get('cmap', 'hsv')                # Default cmap: hsv
+        elif colour == 'div':
+            clr = self.div(x, y)
+            norm = mpl.colors.TwoSlopeNorm(0)
+            cmap = kwargs.get('cmap', 'bwr')
+        elif colour == 'rot':
+            clr = self.rot(x, y)
+            norm = mpl.colors.TwoSlopeNorm(0)
+            cmap = kwargs.get('cmap', 'bwr')
         else:                                               # Default: pass-through
             clr = colour
 
@@ -80,6 +100,29 @@ class VectorField():
         else:
             plt.switch_backend('Agg')
             fig.savefig(file, dpi=100)
+
+    def div(self, x, y, epsilon=0.01):
+        """
+            Numerically evaluate the divergence of the vector field at meshgrid (x, y)
+            with precision epsilon
+        """
+        u1, _ = self.__call__(x + epsilon, y)
+        u2, _ = self.__call__(x - epsilon, y)
+        _, v1 = self.__call__(x, y + epsilon)
+        _, v2 = self.__call__(x, y - epsilon)
+        return ((u2 - u1) + (v2 - v1)) / (2 * epsilon)
+
+    def rot(self, x, y, epsilon=0.01):
+        """
+            Numerically evaluate the curl of the vector field at meshgrid (x, y)
+            With precision epsilon as (x + e, y) - (x - e, y) + ()
+        """
+        u1, _ = self.__call__(x, y + epsilon)
+        u2, _ = self.__call__(x, y - epsilon)
+        _, v1 = self.__call__(x + epsilon, y)
+        _, v2 = self.__call__(x - epsilon, y)
+        return ((u2 - u1) - (v2 - v1)) / (2 * epsilon)
+
 
 
 class SampledVectorField():
