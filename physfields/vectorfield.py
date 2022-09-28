@@ -10,7 +10,7 @@ from .scalarfield import ScalarField, SampledScalarField
 
 class VectorField():
     def __init__(self, function):
-        self.function = (lambda x, y: (0, 0)) if function is None else function
+        self.function = (lambda x, y: (np.zeros_like(x), np.zeros_like(y))) if function is None else function
 
     @staticmethod
     def from_uv(u, v):

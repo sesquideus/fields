@@ -8,7 +8,7 @@ from matplotlib import colors
 
 class ScalarField():
     def __init__(self, function=None):
-        self.function = (lambda x, y: 0) if function is None else function
+        self.function = (lambda x, y: np.zeros_like(x)) if function is None else function
 
     def __call__(self, x, y):
         return self.function(x, y)
