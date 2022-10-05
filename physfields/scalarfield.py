@@ -93,6 +93,19 @@ class ScalarField():
             fig.savefig(file, dpi=100)
 
 
+class TrueScalarField():
+    def __init__(self, function=None):
+        self.function = (lambda x, y: np.zeros_like(x)) if function is None else function
+
+    def __call__(self, points):
+        """
+            Evaluate the scalar field at selected points
+            points: 2D array of shape (n, d)
+        """
+        return self.function(points)
+
+
+
 class SampledScalarField():
     def __init__(self, x, y, z=None):
         self.x, self.y = x, y

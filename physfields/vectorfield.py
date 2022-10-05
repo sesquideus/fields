@@ -1,5 +1,6 @@
 import numpy as np
 import numbers
+import inspect
 import matplotlib as mpl
 from scipy.interpolate import griddata
 
@@ -9,8 +10,9 @@ from .scalarfield import ScalarField, SampledScalarField
 
 
 class VectorField():
-    def __init__(self, function):
+    def __init__(self, function, name=""):
         self.function = (lambda x, y: (np.zeros_like(x), np.zeros_like(y))) if function is None else function
+        self.name = name
 
     @staticmethod
     def from_uv(u, v):
@@ -52,12 +54,33 @@ class VectorField():
         else:
             raise NotImplementedError
 
+    def __truediv__(self, other):
+        if isinstance(other, numbers.Number):
+            return VectorField(lambda x, y: (self.function(x, y)[0] / other, self.function(x, y)[1] / other))
+        else:
+            raise ValueError("Can only divide vector field by scalars or scalar felds")
+
     def plot(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 10)))
         fig.tight_layout()
 
         ax.set_facecolor(kwargs.get('face_colour', 'white'))
+        ax.set_aspect('equal')
+        self.plot_data(ax, x, y, mask=mask, colour=colour, **kwargs)
 
+        if limits is not None:
+            ((xmin, xmax), (ymin, ymax)) = limits
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
+
+        if file is None:
+            plt.switch_backend('TkAgg')
+            plt.show()
+        else:
+            plt.switch_backend('Agg')
+            fig.savefig(file, dpi=100)
+
+    def plot_data(self, ax, x, y, *, mask=None, colour=None, **kwargs):
         u, v = self(x, y)
         if mask is not None:
             u = np.ma.masked_where(mask(x, y), u)
@@ -87,19 +110,6 @@ class VectorField():
             clr = colour
 
         ax.quiver(x, y, u, v, clr, norm=norm, cmap=cmap, pivot='middle')
-        ax.set_aspect('equal')
-
-        if limits is not None:
-            ((xmin, xmax), (ymin, ymax)) = limits
-            ax.set_xlim(xmin, xmax)
-            ax.set_ylim(ymin, ymax)
-
-        if file is None:
-            plt.switch_backend('TkAgg')
-            plt.show()
-        else:
-            plt.switch_backend('Agg')
-            fig.savefig(file, dpi=100)
 
     def div(self, x, y, epsilon=0.01):
         """
@@ -122,6 +132,15 @@ class VectorField():
         _, v1 = self.__call__(x + epsilon, y)
         _, v2 = self.__call__(x - epsilon, y)
         return ((u2 - u1) - (v2 - v1)) / (2 * epsilon)
+
+
+class TrueVectorField():
+    def __init__(self, function, name=""):
+        self.function = (lambda x: np.zeros_like(x)) if function is None else function
+        self.name = name
+
+    def __call__(self, x, y):
+        return self.function(x, y)
 
 
 

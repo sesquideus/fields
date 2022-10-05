@@ -1,4 +1,6 @@
 import numpy as np
+import collections
+
 
 from .scalarfield import ScalarField
 from .vectorfield import VectorField
@@ -23,12 +25,16 @@ def triangular_column(n):
     return n - triangular_less(n)
 
 
+SR2 = np.sqrt(2)
+SROH = 1 / np.sqrt(2)
+
+
 class Zernike(ScalarField):
     """
         Lazily evaluated scalar Zernike polynomial
     """
 
-    def __init__(self, n, l, masked=True):
+    def __init__(self, n, l, masked=False):
         """
             A new Zernike scalar field defined in terms of radial and angular component order n and l:
             n: int, non-negative radial component order
@@ -62,7 +68,7 @@ class Zernike(ScalarField):
     @classmethod
     def from_noll(cls, noll):
         """
-            Static constructor from noll index
+            Static constructor from Noll index
         """
         return cls(*cls.noll_to_nl(noll))
 
@@ -99,8 +105,62 @@ class Zernike(ScalarField):
             return z
 
 
-class ZernikeVector(VectorField):
-    def __init__(self, n, m, masked=True):
+class ZernikeVector():
+    v = collections.OrderedDict()
+
+    v[0,  0]        = VectorField.from_uv(ScalarField(), ScalarField())                                             # S_1
+
+    v[1, -1]        = VectorField.from_uv(Zernike(0, 0), ScalarField())                                             # S_2 = (  Z_1,    0) =  S_3
+    v[1,  1]        = VectorField.from_uv(ScalarField(), Zernike(0, 0))                                             # S_3 = (    0,  Z_1) = -T_2
+
+    v[2, -2]        = SROH * VectorField.from_uv(Zernike(1, -1), Zernike(1, 1))                                     # S_5 = (  Z_2,  Z_3) = -T_6
+    v[2,  0, False] = SROH * VectorField.from_uv(Zernike(1, 1), Zernike(1, -1))                                     # S_4 = (  Z_3,  Z_2)
+    v[2,  0, True]  = SROH * VectorField.from_uv(Zernike(1, -1), -Zernike(1, 1))                                    #       (  Z_3, -Z_2) =  T_4
+    v[2,  2]        = SROH * VectorField.from_uv(Zernike(1, 1), -Zernike(1, -1))                                    # S_6 = (  Z_2, -Z_3) =  T_5
+
+    v[3, -3]        = SROH * VectorField.from_uv(Zernike(2, -2), Zernike(2, 2))                                     # S_9 = (  Z_5,  Z_6) = -T_10
+    v[3, -1, False] = 0.5 * VectorField.from_uv(Zernike(2, -2), SR2 * Zernike(2, 0) - Zernike(2, 2))
+    v[3, -1, True]  = 0.5 * VectorField.from_uv(SR2 * Zernike(2, 0) - Zernike(2, 2), -Zernike(2, -2))
+    v[3,  1, False] = 0.5 * VectorField.from_uv(SR2 * Zernike(2, 0) + Zernike(2, 2), Zernike(2, -2))                # T_8
+    v[3,  1, True]  = 0.5 * VectorField.from_uv(Zernike(2, -2), -SR2 * Zernike(2, 0) - Zernike(2, 2))
+    v[3,  3]        = SROH * VectorField.from_uv(Zernike(2, 2), -Zernike(2, -2))
+
+    v[4, -4]        = SROH * VectorField.from_uv(Zernike(3, -3), Zernike(3, 3))
+    v[4, -2, False] = 0.5 * VectorField.from_uv(Zernike(3, 3) + Zernike(3, 1), -Zernike(3, -1) + Zernike(3, -3))
+    v[4, -2, True]  = 0.5 * VectorField.from_uv(-Zernike(3, -1) + Zernike(3, -3), -Zernike(3, 1) - Zernike(3, 3))
+    v[4,  0, False] = SROH * VectorField.from_uv(Zernike(3, 1), Zernike(3, -1))
+    v[4,  0, True]  = SROH * VectorField.from_uv(Zernike(3, -1), -Zernike(3, 1))
+    v[4,  2, False] = 0.5 * VectorField.from_uv(Zernike(3, -3) + Zernike(3, -1), Zernike(3, 1) - Zernike(3, 3))
+    v[4,  2, True]  = 0.5 * VectorField.from_uv(Zernike(3, 1) - Zernike(3, 3), -Zernike(3, -1) - Zernike(3, -3))
+    v[4,  4]        = SROH * VectorField.from_uv(Zernike(3, 3), -Zernike(3, -3))
+
+    v[5, -5]        = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5, -3, False] = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5, -3, True]  = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5, -1, False] = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5, -1, True]  = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5,  1, False] = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5,  1, True]  = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5,  3, False] = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5,  3, True]  = SROH * VectorField.from_uv(Zernike(4, -4), Zernike(4, 4))
+    v[5,  5]        = SROH * VectorField.from_uv(Zernike(4, 4), -Zernike(4, -4))
+
+    @classmethod
+    def create(cls, n, l, rotational=None, masked=True):
+        if abs(l) > n or (l + n) % 2 != 0:
+            raise NotImplementedError("|l| must be < n and also l = n (mod 2)")
+        if abs(l) == n and rotational is not None:
+            raise NotImplementedError("Polynomials with |l| = n are always Laplacian")
+        if abs(l) != n and rotational is None:
+            raise NotImplementedError("Polynomials with |l| != n have to be rotational or diverging")
+
+        if rotational is None:
+            return cls.v[n, l]
+        else:
+            return cls.v[n, l, rotational]
+
+    @classmethod
+    def from_index(cls, index):
         pass
 
 #    @staticmethod
