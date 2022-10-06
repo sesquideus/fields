@@ -10,6 +10,10 @@ from .scalarfield import ScalarField, SampledScalarField
 
 
 class VectorField():
+    @staticmethod
+    def UnitDisk(x, y):
+        return x**2 + y**2 > 1
+
     def __init__(self, function, name=""):
         self.function = (lambda x, y: (np.zeros_like(x), np.zeros_like(y))) if function is None else function
         self.name = name
@@ -61,6 +65,7 @@ class VectorField():
             raise ValueError("Can only divide vector field by scalars or scalar felds")
 
     def plot(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
+        print(f"Plotting to {file}")
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 10)))
         fig.tight_layout()
 
