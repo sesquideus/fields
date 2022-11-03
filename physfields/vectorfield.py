@@ -37,6 +37,9 @@ class VectorField():
     def __call__(self, x, y):
         return self.function(x, y)
 
+    def eval(self, x):
+        return np.stack(self.__call__(x[:, 0], x[:, 1]), axis=1)
+
     def __add__(self, other):
         return VectorField(lambda x, y: self.function(x, y) + other.function(x, y))
 
@@ -49,20 +52,27 @@ class VectorField():
         elif isinstance(other, ScalarField):
             return VectorField(lambda x, y: (self.function(x, y)[0] * other.function(x, y), self.function(x, y)[1] * other.function(x, y)))
         elif isinstance(other, VectorField):
+            return ScalarField(lambda x, y: self.function(x, y)[0] * other.function(x, y)[0] + self.function(x, y)[1] * other.function(x, y)[1])
+        else:
+            raise NotImplemented("Can only multiply vector field with scalars, scalar fields and vector fields")
+
+    def __matmul__(self, other):
+        if isinstance(other, VectorField):
             return ScalarField(lambda x, y: self.function(x, y)[0] * other.function(x, y)[1] - self.function(x, y)[1] * other.function(x, y)[0])
-        raise ValueError("Can only multiply vector field with scalars, scalar fields and vector fields")
+        else:
+            raise NotImplemented("Can only @-multiply vector field with another vector field")
 
     def __rmul__(self, other):
-        if isinstance(other, numbers.Number):
-            return VectorField(lambda x, y: (other * self.function(x, y)[0], other * self.function(x, y)[1]))
-        else:
-            raise NotImplementedError
+        return self * other
+
+    def __rmatmul__(self, other):
+        return other @ self
 
     def __truediv__(self, other):
         if isinstance(other, numbers.Number):
             return VectorField(lambda x, y: (self.function(x, y)[0] / other, self.function(x, y)[1] / other))
         else:
-            raise ValueError("Can only divide vector field by scalars or scalar felds")
+            raise NotImplemented("Can only divide vector field by scalars or scalar felds")
 
     def plot(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
         print(f"Plotting to {file}")
