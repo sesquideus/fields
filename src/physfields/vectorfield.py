@@ -2,24 +2,24 @@ import numpy as np
 import numbers
 import inspect
 import matplotlib as mpl
-from scipy.interpolate import griddata
 
 from matplotlib import pyplot as plt
+from typing import Callable
 
+from .field import Field
 from .scalarfield import ScalarField, SampledScalarField
 
 
-class VectorField():
-    @staticmethod
-    def UnitDisk(x, y):
-        return x**2 + y**2 > 1
-
-    def __init__(self, function, name=""):
-        self.function = (lambda x, y: (np.zeros_like(x), np.zeros_like(y))) if function is None else function
-        self.name = name
+class VectorField(Field):
+    def __init__(self, u=None, v=None, *, mask=None, name=""):
+        super().__init__(mask=mask, name=name)
+        self.function = (lambda x, y: (np.zeros_like(x) if u is None else u(x, y), np.zeros_like(y) if v is None else v(x, y)))
 
     @staticmethod
-    def from_uv(u, v):
+    def from_uv(
+            u: Callable[[np.ndarray, np.ndarray], np.ndarray],
+            v: Callable[[np.ndarray, np.ndarray], np.ndarray]
+        ) -> 'VectorField':
         """ Construct from functions u(x, y) and v(x, y) """
         return __class__(lambda x, y: (u(x, y), v(x, y)))
 
@@ -34,8 +34,9 @@ class VectorField():
             return erho * np.cos(etau), erho * np.sin(etau)
         return __class__(fun)
 
-    def __call__(self, x, y):
-        return self.function(x, y)
+    @staticmethod
+    def from_direct(fun: Callable[[np.ndarray], np.ndarray]):
+        """ Construct from function. This requires ndarray [any, ..., any, D] """
 
     def eval(self, x):
         return np.stack(self.__call__(x[:, 0], x[:, 1]), axis=1)
@@ -54,13 +55,13 @@ class VectorField():
         elif isinstance(other, VectorField):
             return ScalarField(lambda x, y: self.function(x, y)[0] * other.function(x, y)[0] + self.function(x, y)[1] * other.function(x, y)[1])
         else:
-            raise NotImplemented("Can only multiply vector field with scalars, scalar fields and vector fields")
+            return NotImplemented
 
     def __matmul__(self, other):
         if isinstance(other, VectorField):
             return ScalarField(lambda x, y: self.function(x, y)[0] * other.function(x, y)[1] - self.function(x, y)[1] * other.function(x, y)[0])
         else:
-            raise NotImplemented("Can only @-multiply vector field with another vector field")
+            return NotImplemented
 
     def __rmul__(self, other):
         return self * other
@@ -72,7 +73,7 @@ class VectorField():
         if isinstance(other, numbers.Number):
             return VectorField(lambda x, y: (self.function(x, y)[0] / other, self.function(x, y)[1] / other))
         else:
-            raise NotImplemented("Can only divide vector field by scalars or scalar felds")
+            return NotImplemented
 
     def plot(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
         print(f"Plotting to {file}")
@@ -128,8 +129,8 @@ class VectorField():
 
     def div(self, x, y, epsilon=0.01):
         """
-            Numerically evaluate the divergence of the vector field at meshgrid (x, y)
-            with precision epsilon
+        Numerically evaluate the divergence of the vector field at meshgrid (x, y)
+        with precision epsilon
         """
         u1, _ = self.__call__(x + epsilon, y)
         u2, _ = self.__call__(x - epsilon, y)
@@ -139,8 +140,8 @@ class VectorField():
 
     def rot(self, x, y, epsilon=0.01):
         """
-            Numerically evaluate the curl of the vector field at meshgrid (x, y)
-            With precision epsilon as (x + e, y) - (x - e, y) + ()
+        Numerically evaluate the curl of the vector field at meshgrid (x, y)
+        with precision epsilon as (x + e, y) - (x - e, y) + ()
         """
         u1, _ = self.__call__(x, y + epsilon)
         u2, _ = self.__call__(x, y - epsilon)

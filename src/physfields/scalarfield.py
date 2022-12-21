@@ -5,40 +5,42 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib import colors
 
+from .field import Field
 
-class ScalarField():
-    def __init__(self, function=None):
+
+class ScalarField(Field):
+    def __init__(self, function=None, *, mask=None, name=""):
+        super().__init__(mask=mask, name=name)
         self.function = (lambda x, y: np.zeros_like(x)) if function is None else function
 
-    def __call__(self, x, y):
-        return self.function(x, y)
-
     def __neg__(self):
-        return ScalarField(lambda x, y: -self.function(x, y))
+        return __class__(lambda x, y: -self.function(x, y))
 
     def __add__(self, other):
-        return ScalarField(lambda x, y: self.function(x, y) + other.function(x, y))
+        return __class__(lambda x, y: self.function(x, y) + other.function(x, y))
 
     def __sub__(self, other):
-        return ScalarField(lambda x, y: self.function(x, y) - other.function(x, y))
+        return __class__(lambda x, y: self.function(x, y) - other.function(x, y))
 
     def __mul__(self, other):
         if isinstance(other, numbers.Number):
-            return ScalarField(lambda x, y: other * self.function(x, y))
+            return __class__(lambda x, y: other * self.function(x, y))
+        elif isinstance(other, ScalarField):
+            return __class__(lambda x, y: self.function(x, y) * other.function(x, y))
         else:
-            return ScalarField(lambda x, y: self.function(x, y) * other.function(x, y))
+            return NotImplemented
 
     def __rmul__(self, value):
         if isinstance(value, numbers.Number):
-            return ScalarField(lambda x, y: value * self.function(x, y))
+            return __class__(lambda x, y: value * self.function(x, y))
         else:
-            raise NotImplementedError
+            return NotImplemented
 
     def __truediv__(self, other):
         if isinstance(other, numbers.Number):
-            return ScalarField(lambda x, y: self.function(x, y) / other)
+            return __class__(lambda x, y: self.function(x, y) / other)
         else:
-            return ScalarField(lambda x, y: self.function(x, y) / other.function(x, y))
+            return __class__(lambda x, y: self.function(x, y) / other.function(x, y))
 
     def plot_image(self, x, y, *, file=None, limits=None, mask=None, colour=None, **kwargs):
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 10)))
