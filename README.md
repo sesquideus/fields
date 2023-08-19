@@ -1,4 +1,4 @@
 # physics-fields
 
-A package for `numpy` that enables creation of lazily evaluated two-dimensional scalar and vector fields
-that can be evaluated over grids or collections of points.
+A simple package for `numpy` which implements lazily evaluated two-dimensional scalar and vector fields.
+They can be evaluated over regular grids or collections of points.
