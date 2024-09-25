@@ -1,4 +1,5 @@
 *fields.egg-info/*
 *.pyc
 build/*
+dist/*
 

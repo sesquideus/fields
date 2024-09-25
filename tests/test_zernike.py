@@ -2,8 +2,6 @@ import sys
 import pytest
 import numpy as np
 
-sys.path.append('src/')
-
 from physfields import Field, ScalarField, VectorField
 from physfields.zernike import Zernike, ZernikeVector
 

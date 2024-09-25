@@ -2,8 +2,6 @@ import sys
 import pytest
 import numpy as np
 
-sys.path.append('src/')
-
 from physfields.scalarfield import ScalarField
 
 

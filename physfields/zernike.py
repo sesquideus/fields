@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 
 from typing import Optional
 
@@ -83,8 +84,8 @@ class Zernike(ScalarField):
     def radial_part(self, x, y):
         r = np.sqrt(x * x + y * y)
         return sum([
-            (-1)**s * np.math.factorial(self.n - s) /
-            (np.math.factorial(s) * np.math.factorial((self.n + self.absl) // 2 - s) * np.math.factorial((self.n - self.absl) // 2 - s))
+            (-1)**s * sp.special.factorial(self.n - s) /
+            (sp.special.factorial(s) * sp.special.factorial((self.n + self.absl) // 2 - s) * sp.special.factorial((self.n - self.absl) // 2 - s))
             * r ** (self.n - 2 * s)
             for s in range(0, (self.n - self.absl) // 2 + 1)],
         )
